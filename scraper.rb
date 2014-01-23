@@ -1,3 +1,4 @@
+require 'scraperwiki'
 require 'mechanize'
 
 url = 'http://www.mornpen.vic.gov.au/Building_Planning/Advertised_Planning_Applications'
@@ -22,7 +23,7 @@ page.search('.scrollable-table tbody tr').each do |tr|
   info_page = agent.get(record['info_url'])
   record['description'] = info_page.search('.content p.margin-bottom-small').first.text.split(':')[1..-1].join(":").strip
 
-  if ScraperWiki.select("* from swdata where `council_reference`='#{record['council_reference']}'").empty? 
+  if ScraperWiki.select("* from data where `council_reference`='#{record['council_reference']}'").empty? 
     ScraperWiki.save_sqlite(['council_reference'], record)
   else
      puts "Skipping already saved record " + record['council_reference']
