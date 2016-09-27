@@ -1,6 +1,12 @@
 require 'scraperwiki'
 require 'mechanize'
 
+class Hash
+  def has_blank?
+    self.values.any?{|v| v.nil? || v.length == 0}
+  end
+end
+
 init_url = 'http://www.mornpen.vic.gov.au/Building-Planning/Planning/Advertised-Planning-Applications'
 comment_url = 'mailto:planning.submission@mornpen.vic.gov.au'
 
@@ -34,12 +40,14 @@ table.search('a').each do |a|
       'date_scraped'      => Date.today.to_s
     }
 
-    if (ScraperWiki.select("* from data where `council_reference`='#{record['council_reference']}'").empty? rescue true)
-      puts "Saving record " + record['council_reference'] + " - " + record['address']
-#       puts record
-      ScraperWiki.save_sqlite(['council_reference'], record)
-    else
-       puts "Skipping already saved record " + record['council_reference']
+  unless record.has_blank?
+      if (ScraperWiki.select("* from data where `council_reference`='#{record['council_reference']}'").empty? rescue true)
+        puts "Saving record " + record['council_reference'] + " - " + record['address']
+#         puts record
+        ScraperWiki.save_sqlite(['council_reference'], record)
+      else
+         puts "Skipping already saved record " + record['council_reference']
+      end
     end
   end
 end
