@@ -1,34 +1,33 @@
 require 'scraperwiki'
 require 'mechanize'
 
-url = 'http://www.mornpen.vic.gov.au/Building_Planning/Advertised_Planning_Applications'
+init_url = 'http://www.mornpen.vic.gov.au/Building-Planning/Planning/Advertised-Planning-Applications'
+comment_url = 'mailto:planning.submission@mornpen.vic.gov.au'
+
 agent = Mechanize.new
 
-page = agent.get(url)
+page = agent.get(init_url)
 
-page.search('.scrollable-table tbody tr').each do |tr|
-  next if tr.search('td')[0].text == 'App No.'
+table = page.search('table')
+table.search('a').each do |a|
+  detail_page = agent.get(a[:href])
 
-  tds = tr.search('td')
-  info_url = tds[1].search('a').first['href']
-
-  begin
-    info_page = agent.get(info_url)
-  rescue Mechanize::ResponseCodeError => e
-    puts "Skipping due to error getting info page: #{e}"
-    next
-  end
+  description = detail_page.at('div#main-content p').text
+  description.slice! ("Proposal:")
+  description = description.gsub(/\A\p{Space}*/, '').capitalize
 
   record = {
-    'council_reference' => tds[0].text.strip,
-    'description'       => info_page.search('.content p.margin-bottom-small').first.text.split(':')[1..-1].join(":").strip,
-    'address'           => [tds[1].text.strip, tds[2].text.strip, 'VIC'].join(", "),
-    'info_url'          => info_url,
-    'comment_url'       => tds[1].search('a').first['href'],
+    'council_reference' => detail_page.search('div#main-content h1')[0].text.lstrip.rstrip,
+    'description'       => description,
+    'address'           => detail_page.search('div#main-content h1')[1].text.split.map(&:capitalize).join(' ') + ', VIC',
+    'info_url'          => a[:href],
+    'comment_url'       => comment_url,
     'date_scraped'      => Date.today.to_s
   }
 
   if (ScraperWiki.select("* from data where `council_reference`='#{record['council_reference']}'").empty? rescue true)
+    puts "Saving record " + record['council_reference'] + " - " + record['address']
+    # puts record
     ScraperWiki.save_sqlite(['council_reference'], record)
   else
      puts "Skipping already saved record " + record['council_reference']
