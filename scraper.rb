@@ -10,26 +10,36 @@ page = agent.get(init_url)
 
 table = page.search('table')
 table.search('a').each do |a|
-  detail_page = agent.get(a[:href])
-
-  description = detail_page.at('div#main-content p').text
-  description.slice! ("Proposal:")
-  description = description.gsub(/\A\p{Space}*/, '').capitalize
-
-  record = {
-    'council_reference' => detail_page.search('div#main-content h1')[0].text.lstrip.rstrip,
-    'description'       => description,
-    'address'           => detail_page.search('div#main-content h1')[1].text.split.map(&:capitalize).join(' ') + ', VIC',
-    'info_url'          => a[:href],
-    'comment_url'       => comment_url,
-    'date_scraped'      => Date.today.to_s
-  }
-
-  if (ScraperWiki.select("* from data where `council_reference`='#{record['council_reference']}'").empty? rescue true)
-    puts "Saving record " + record['council_reference'] + " - " + record['address']
-    # puts record
-    ScraperWiki.save_sqlite(['council_reference'], record)
+  begin
+    detail_page = agent.get(a[:href])
+  rescue Mechanize::ResponseCodeError => e
+    puts "Skipping due to error getting info page: #{e}"
   else
-     puts "Skipping already saved record " + record['council_reference']
+    textlines = detail_page.at('div#main-content').text.split("\r")
+
+    council_reference = textlines[0].strip
+
+    description = textlines[4].strip
+    description.slice!("Proposal:")
+    description = description.gsub(/\A\p{Space}*/, '').capitalize
+
+    address = textlines[3].strip.split.map(&:capitalize).join(' ') + ', VIC'
+
+    record = {
+      'council_reference' => council_reference,
+      'description'       => description,
+      'address'           => address,
+      'info_url'          => a[:href],
+      'comment_url'       => comment_url,
+      'date_scraped'      => Date.today.to_s
+    }
+
+    if (ScraperWiki.select("* from data where `council_reference`='#{record['council_reference']}'").empty? rescue true)
+      puts "Saving record " + record['council_reference'] + " - " + record['address']
+#       puts record
+      ScraperWiki.save_sqlite(['council_reference'], record)
+    else
+       puts "Skipping already saved record " + record['council_reference']
+    end
   end
 end
