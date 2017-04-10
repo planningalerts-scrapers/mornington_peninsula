@@ -14,39 +14,51 @@ agent = Mechanize.new
 
 page = agent.get(init_url)
 
-table = page.search('table')
-table.search('a').each do |a|
-  begin
-    detail_page = agent.get(a[:href])
-  rescue Mechanize::ResponseCodeError => e
-    puts "Skipping due to error getting info page: #{e}"
-  else
-    textlines = detail_page.at('div#main-content').text.split("\r")
+totalpages = page.search('div.seamless-pagination-info')
+totalpages = totalpages.text.strip.split(" ")[3].to_i
 
-    council_reference = textlines[0].strip
+for i in 1..totalpages
+  puts "Checking page #{i} of #{totalpages}"
+  form = page.form_with(:name => 'mainForm')
+  form.field_with(:class => 'scSearchInputBox').options[i-1].click
+  page = form.submit(form.button_with(:value=>'Go'))
 
-    description = textlines[4].strip
-    description.slice!("Proposal:")
-    description = description.gsub(/\A\p{Space}*/, '').capitalize
+  list = page.search('div.list-container')
+  list.search('a').each do |a|
+    begin
+      detail_page = agent.get(a[:href].strip)
+    rescue Mechanize::ResponseCodeError => e
+      puts "Skipping due to error getting info page: #{e}"
+    else
+      textlines = detail_page.at('div#main-content').text.split("\r\n")
+			textlines.delete_if { |textline| textline.strip.empty? }
 
-    address = textlines[3].strip.split.map(&:capitalize).join(' ') + ', VIC'
+      council_reference = textlines[0].strip
+      address = textlines[1].strip.split.map(&:capitalize).join(' ') + ', VIC'
 
-    record = {
-      'council_reference' => council_reference,
-      'description'       => description,
-      'address'           => address,
-      'info_url'          => a[:href],
-      'comment_url'       => comment_url,
-      'date_scraped'      => Date.today.to_s
-    }
+      description = detail_page.at('div#main-content').text.split("Proposal:")
+      description = description[1].split("Application No:")[0].strip
+      description = description.gsub(/\A\p{Space}*/, '').capitalize
 
-  unless record.has_blank?
-      if (ScraperWiki.select("* from data where `council_reference`='#{record['council_reference']}'").empty? rescue true)
-        puts "Saving record " + record['council_reference'] + " - " + record['address']
-#         puts record
-        ScraperWiki.save_sqlite(['council_reference'], record)
+      record = {
+        'council_reference' => council_reference,
+        'description'       => description,
+        'address'           => address,
+        'info_url'          => a[:href],
+        'comment_url'       => comment_url,
+        'date_scraped'      => Date.today.to_s
+      }
+
+      unless record.has_blank?
+        if (ScraperWiki.select("* from data where `council_reference`='#{record['council_reference']}'").empty? rescue true)
+          puts "Saving record " + record['council_reference'] + " - " + record['address']
+#          puts record
+          ScraperWiki.save_sqlite(['council_reference'], record)
+        else
+          puts "Skipping already saved record " + record['council_reference']
+        end
       else
-         puts "Skipping already saved record " + record['council_reference']
+      	puts "Something not right here: #{record}"
       end
     end
   end
