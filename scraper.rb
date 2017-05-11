@@ -37,8 +37,13 @@ for i in 1..totalpages
       address = textlines[1].strip.split.map(&:capitalize).join(' ') + ', VIC'
 
       description = detail_page.at('div#main-content').text.split("Proposal:")
-      description = description[1].split("Application No:")[0].strip
-      description = description.gsub(/\A\p{Space}*/, '').capitalize
+
+      if ( description.size == 2 )
+        description = description[1].split("Application No:")[0].strip
+        description = description.gsub(/\A\p{Space}*/, '').capitalize
+      else
+        description = nil
+      end
 
       record = {
         'council_reference' => council_reference,
