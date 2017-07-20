@@ -27,9 +27,6 @@ for i in 1..totalpages
   list.search('a').each do |a|
     begin
       detail_page = agent.get(a[:href].strip)
-    rescue Mechanize::ResponseCodeError => e
-      puts "Skipping due to error getting info page: #{e}"
-    else
       textlines = detail_page.at('div#main-content').text.split("\r\n")
 			textlines.delete_if { |textline| textline.strip.empty? }
 
@@ -45,6 +42,9 @@ for i in 1..totalpages
         description = nil
       end
 
+    rescue
+      puts "Skipping due to error getting info page or its data"
+    else
       record = {
         'council_reference' => council_reference,
         'description'       => description,
