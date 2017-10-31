@@ -12,6 +12,12 @@ comment_url = 'mailto:planning.submission@mornpen.vic.gov.au'
 
 agent = Mechanize.new
 
+unless ENV['MORPH_PROXY'].nil?
+  puts "Using MORPH_PROXY settings\n"
+  host, port = ENV['MORPH_PROXY'].split(":")
+  agent.set_proxy(host, port)
+end
+
 page = agent.get(init_url)
 
 totalpages = page.search('div.seamless-pagination-info')
