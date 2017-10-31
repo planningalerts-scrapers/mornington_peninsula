@@ -1,1 +1,0 @@
-Tries to scrape development application information from the "Mornington Peninsula Shire.":http://www.mornpen.vic.gov.au/Page/Page.asp?Page_Id=700
