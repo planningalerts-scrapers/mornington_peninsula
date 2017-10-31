@@ -7,7 +7,7 @@ class Hash
   end
 end
 
-init_url = 'http://www.mornpen.vic.gov.au/Building-Planning/Planning/Advertised-Planning-Applications'
+init_url = 'https://www.mornpen.vic.gov.au/Building-Planning/Planning/Advertised-Planning-Applications'
 comment_url = 'mailto:planning.submission@mornpen.vic.gov.au'
 
 agent = Mechanize.new
