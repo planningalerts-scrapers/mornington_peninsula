@@ -27,17 +27,15 @@ for i in 1..totalpages
   list.search('a').each do |a|
     begin
       detail_page = agent.get(a[:href].strip)
-      textlines = detail_page.at('div#main-content').text.split("\r\n")
-			textlines.delete_if { |textline| textline.strip.empty? }
 
-      council_reference = textlines[0].strip
-      address = textlines[1].strip.split.map(&:capitalize).join(' ') + ', VIC'
+      council_reference = detail_page.at('meta[property="og:title"]')[:content].squeeze.strip
+      address           = detail_page.at('meta[property="og:description"]')[:content] + ', VIC'
 
       description = detail_page.at('div#main-content').text.split("Proposal:")
 
       if ( description.size == 2 )
         description = description[1].split("Application No:")[0].strip
-        description = description.gsub(/\A\p{Space}*/, '').capitalize
+        description = description.gsub(/\A\p{Space}*/, '').capitalize.squeeze.strip
       else
         description = nil
       end
@@ -57,7 +55,7 @@ for i in 1..totalpages
       unless record.has_blank?
         if (ScraperWiki.select("* from data where `council_reference`='#{record['council_reference']}'").empty? rescue true)
           puts "Saving record " + record['council_reference'] + " - " + record['address']
-#          puts record
+#           puts record
           ScraperWiki.save_sqlite(['council_reference'], record)
         else
           puts "Skipping already saved record " + record['council_reference']
