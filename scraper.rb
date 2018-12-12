@@ -34,14 +34,14 @@ for i in 1..totalpages
     begin
       detail_page = agent.get(a[:href].strip)
 
-      council_reference = detail_page.at('meta[property="og:title"]')[:content].squeeze.strip
+      council_reference = detail_page.at('meta[property="og:title"]')[:content].squeeze(" ").strip
       address           = detail_page.at('meta[property="og:description"]')[:content] + ', VIC'
 
       description = detail_page.at('div#main-content').text.split("Proposal:")
 
       if ( description.size == 2 )
         description = description[1].split("Application No:")[0].strip
-        description = description.gsub(/\A\p{Space}*/, '').capitalize.squeeze.strip
+        description = description.gsub(/\A\p{Space}*/, '').capitalize.squeeze(" ").strip
       else
         description = nil
       end
