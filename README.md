@@ -1,3 +1,1 @@
-# Mornington Peninsula Shire Council scraper
-
-Setup MORPH_PROXY (host:port) to make proxy request for web pages
+Merged this scraper into planningalerts-scrapers/multiple_technology_one (mornington_peninsula)
